@@ -19,8 +19,20 @@ def merge_inputs(input1, input2):
             if token_set2 & set(tokens1):  # Check for any intersection
                 del result[tokens1]
         
-        # Add the input2 tuple
-        result[tokens2] = value2
+        # Merge with input1 tuple having the same value, if available
+        merged = False
+        for tokens1, value1 in list(result.items()):
+            tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
+            if value1 == value2 and not merged:
+                new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge tokens, sort
+                del result[tokens1]  # Remove old tuple
+                result[new_tokens] = value2
+                merged = True
+                break
+        
+        # If no merge occurred, add the input2 tuple
+        if not merged:
+            result[tokens2] = value2
 
     # Ensure all keys are tuples
     final_result = OrderedDict()
@@ -51,13 +63,14 @@ HTML_TEMPLATE = '''
     <form method="POST" action="/">
         <label for="input1">Input 1 (Python dict format):</label><br>
         <textarea id="input1" name="input1" placeholder="{
-    ('PENGU', 'WLFI', 'ZRO', 'ASTER', 'FXS', 'HOME', 'OKB', 'NEWT', 'ENA', 'FLOW'): 1.0,
-    ('DOGE', 'TRX', 'XRP', 'SOL'): 0.01
+    ('AA', 'BB'): 1,
+    ('CC'): 2,
+    ('DD'): 3
 }"></textarea><br>
         <label for="input2">Input 2 (Python dict format):</label><br>
         <textarea id="input2" name="input2" placeholder="{
-    ('BAT', 'BRETT', 'ORDER', 'PENDLE', 'WAL'): 1.0,
-    ('THETA'): 0.6
+    ('CC'): 1,
+    ('AA'): 3
 }"></textarea><br>
         <button type="submit">Submit</button>
     </form>
