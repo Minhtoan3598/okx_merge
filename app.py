@@ -10,28 +10,38 @@ def merge_inputs(input1, input2):
     
     # Process each entry in input2
     for tokens2, value2 in input2.items():
+        tokens2 = tuple([tokens2] if isinstance(tokens2, str) else tokens2)  # Ensure single tokens are tuples
         token_set2 = set(tokens2)
         merged = False
         
         # Check for matching values in input1 to merge tuples
         for tokens1, value1 in list(result.items()):
+            tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)  # Ensure single tokens are tuples
             if value1 == value2 and not merged:
                 # Merge tokens if values match
-                new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Union of tokens, sorted for consistency
+                new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Union of tokens, sorted
                 if new_tokens != tokens1:
                     del result[tokens1]  # Remove old tuple
                     result[new_tokens] = value2
                     merged = True
+                break  # Merge with the first matching value only
         
-        # If no merge occurred, check for exact token set replacement
+        # If no merge occurred, replace or add the tuple
         if not merged:
             for tokens1 in list(result.keys()):
+                tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
                 if set(tokens1) == token_set2:
                     del result[tokens1]  # Remove old tuple
             result[tokens2] = value2  # Add new tuple
 
+    # Ensure all keys are tuples
+    final_result = OrderedDict()
+    for k, v in result.items():
+        k = tuple([k] if isinstance(k, str) else k)
+        final_result[k] = v
+
     # Sort by value
-    sorted_result = OrderedDict(sorted(result.items(), key=lambda x: x[1]))
+    sorted_result = OrderedDict(sorted(final_result.items(), key=lambda x: x[1]))
     return sorted_result
 
 # HTML template with input fields, submit button, result display, and copy button
@@ -98,8 +108,8 @@ def index():
             input2 = ast.literal_eval(input2_str)
             
             # Ensure keys are tuples
-            input1 = {tuple(k) if isinstance(k, list) else k: v for k, v in input1.items()}
-            input2 = {tuple(k) if isinstance(k, list) else k: v for k, v in input2.items()}
+            input1 = {tuple([k] if isinstance(k, str) else k): v for k, v in input1.items()}
+            input2 = {tuple([k] if isinstance(k, str) else k): v for k, v in input2.items()}
             
             # Merge inputs
             merged = merge_inputs(input1, input2)
@@ -112,7 +122,7 @@ def index():
             result_lines.append("}")
             result = "\n".join(result_lines)
         except Exception as e:
-            error = f"Error: {str(e)}. Please ensure inputs are valid Python dictionaries with tuple keys."
+            error = f"Error: {str(e)}. Please ensure inputs are valid Python dictionaries with tuple or string keys."
     
     return render_template_string(HTML_TEMPLATE, result=result, error=error)
 
