@@ -27,8 +27,9 @@ def merge_inputs(input1, input2):
         merged = False
         for tokens1, value1 in temp_result.items():
             tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
-            if value1 == value2 and not (token_set2 & set(tokens1)):  # Same value, no overlap
-                new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge tokens, sort
+            remaining_tokens = set(tokens1) - token_set2  # Tokens in input1 tuple not in input2 tuple
+            if value1 == value2 and remaining_tokens:  # Same value, has non-overlapping tokens
+                new_tokens = tuple(sorted(remaining_tokens | token_set2))  # Merge remaining tokens with input2 tokens
                 result[new_tokens] = value2
                 merged = True
                 break
@@ -38,7 +39,7 @@ def merge_inputs(input1, input2):
             for tokens1, value1 in temp_result.items():
                 tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
                 if value1 == value2:
-                    new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge tokens, sort
+                    new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge all tokens
                     result[new_tokens] = value2
                     merged = True
                     break
