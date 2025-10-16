@@ -8,13 +8,27 @@ def merge_inputs(input1, input2):
     # Create a copy of input1
     result = input1.copy()
     
-    # Update or add entries from input2
-    for tokens, value in input2.items():
-        token_set = set(tokens)
-        for existing_tokens in list(result.keys()):
-            if set(existing_tokens) == token_set:
-                del result[existing_tokens]
-        result[tokens] = value
+    # Process each entry in input2
+    for tokens2, value2 in input2.items():
+        token_set2 = set(tokens2)
+        merged = False
+        
+        # Check for matching values in input1 to merge tuples
+        for tokens1, value1 in list(result.items()):
+            if value1 == value2 and not merged:
+                # Merge tokens if values match
+                new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Union of tokens, sorted for consistency
+                if new_tokens != tokens1:
+                    del result[tokens1]  # Remove old tuple
+                    result[new_tokens] = value2
+                    merged = True
+        
+        # If no merge occurred, check for exact token set replacement
+        if not merged:
+            for tokens1 in list(result.keys()):
+                if set(tokens1) == token_set2:
+                    del result[tokens1]  # Remove old tuple
+            result[tokens2] = value2  # Add new tuple
 
     # Sort by value
     sorted_result = OrderedDict(sorted(result.items(), key=lambda x: x[1]))
