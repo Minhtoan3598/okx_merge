@@ -12,27 +12,15 @@ def merge_inputs(input1, input2):
     for tokens2, value2 in input2.items():
         tokens2 = tuple([tokens2] if isinstance(tokens2, str) else tokens2)  # Ensure single tokens are tuples
         token_set2 = set(tokens2)
-        merged = False
         
-        # Check for matching values in input1 to merge tuples
-        for tokens1, value1 in list(result.items()):
-            tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)  # Ensure single tokens are tuples
-            if value1 == value2 and not merged:
-                # Merge tokens if values match
-                new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Union of tokens, sorted
-                if new_tokens != tokens1:
-                    del result[tokens1]  # Remove old tuple
-                    result[new_tokens] = value2
-                    merged = True
-                break  # Merge with the first matching value only
+        # Remove any input1 tuples with overlapping tokens
+        for tokens1 in list(result.keys()):
+            tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
+            if token_set2 & set(tokens1):  # Check for any intersection
+                del result[tokens1]
         
-        # If no merge occurred, replace or add the tuple
-        if not merged:
-            for tokens1 in list(result.keys()):
-                tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
-                if set(tokens1) == token_set2:
-                    del result[tokens1]  # Remove old tuple
-            result[tokens2] = value2  # Add new tuple
+        # Add the input2 tuple
+        result[tokens2] = value2
 
     # Ensure all keys are tuples
     final_result = OrderedDict()
