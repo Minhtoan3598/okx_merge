@@ -8,41 +8,49 @@ def merge_inputs(input1, input2):
     # Create a copy of input1
     result = input1.copy()
     
-    # Process each entry in input2
+    # Process each input2 tuple
     for tokens2, value2 in input2.items():
         tokens2 = tuple([tokens2] if isinstance(tokens2, str) else tokens2)  # Ensure single tokens are tuples
         token_set2 = set(tokens2)
         
-        # Remove input1 tuples with overlapping tokens
-        for tokens1 in list(result.keys()):
+        # Create a temporary copy of result for merging
+        temp_result = result.copy()
+        overlaps_to_remove = []
+        
+        # Identify input1 tuples with overlapping tokens
+        for tokens1 in temp_result.keys():
             tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
             if token_set2 & set(tokens1):  # Check for any intersection
-                del result[tokens1]
+                overlaps_to_remove.append(tokens1)
         
         # Merge with input1 tuple having the same value, if available
         merged = False
-        for tokens1, value1 in list(result.items()):
+        for tokens1, value1 in temp_result.items():
             tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
             if value1 == value2 and not (token_set2 & set(tokens1)):  # Same value, no overlap
                 new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge tokens, sort
-                del result[tokens1]  # Remove old tuple
                 result[new_tokens] = value2
                 merged = True
                 break
         
-        # If no merge occurred, add the input2 tuple
+        # If no merge occurred, try merging with any same-value tuple
         if not merged:
-            # Check if a tuple with the same value exists and merge to avoid duplicates
-            for tokens1, value1 in list(result.items()):
+            for tokens1, value1 in temp_result.items():
                 tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
                 if value1 == value2:
                     new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge tokens, sort
-                    del result[tokens1]  # Remove old tuple
                     result[new_tokens] = value2
                     merged = True
                     break
-            if not merged:
-                result[tokens2] = value2
+        
+        # If no merge occurred, add the input2 tuple
+        if not merged:
+            result[tokens2] = value2
+        
+        # Remove overlapping input1 tuples after merging
+        for tokens1 in overlaps_to_remove:
+            if tokens1 in result:
+                del result[tokens1]
 
     # Ensure all keys are tuples
     final_result = OrderedDict()
