@@ -13,7 +13,8 @@ def merge_inputs(input1, input2):
         tokens2 = tuple([tokens2] if isinstance(tokens2, str) else tokens2)  # Ensure single tokens are tuples
         token_set2 = set(tokens2)
         
-        # Remove any input1 tuples with overlapping tokens
+        # Remove input1 tuples with overlapping tokens
+        temp_result = result.copy()  # Work on a temporary copy to avoid premature deletions
         for tokens1 in list(result.keys()):
             tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
             if token_set2 & set(tokens1):  # Check for any intersection
@@ -21,11 +22,10 @@ def merge_inputs(input1, input2):
         
         # Merge with input1 tuple having the same value, if available
         merged = False
-        for tokens1, value1 in list(result.items()):
+        for tokens1, value1 in temp_result.items():
             tokens1 = tuple([tokens1] if isinstance(tokens1, str) else tokens1)
-            if value1 == value2 and not merged:
+            if value1 == value2 and not (token_set2 & set(tokens1)):  # Same value, no overlap
                 new_tokens = tuple(sorted(set(tokens1) | token_set2))  # Merge tokens, sort
-                del result[tokens1]  # Remove old tuple
                 result[new_tokens] = value2
                 merged = True
                 break
