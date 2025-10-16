@@ -1,6 +1,6 @@
 from flask import Flask, request, render_template_string
 from collections import OrderedDict
-import json
+import ast
 
 app = Flask(__name__)
 
@@ -28,25 +28,25 @@ HTML_TEMPLATE = '''
     <title>Merge Inputs</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        textarea { width: 100%; height: 200px; margin-bottom: 10px; }
+        textarea { width: 100%; height: 200px; margin-bottom: 10px; font-family: monospace; }
         button { padding: 10px 20px; margin-right: 10px; }
-        #result { border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; }
+        #result { border: 1px solid #ccc; padding: 10px; white-space: pre-wrap; font-family: monospace; }
         .error { color: red; }
     </style>
 </head>
 <body>
     <h2>Merge Input Dictionaries</h2>
     <form method="POST" action="/">
-        <label for="input1">Input 1 (JSON format):</label><br>
-        <textarea id="input1" name="input1" placeholder='{
-    "[\"PENGU\", \"WLFI\", \"ZRO\", \"ASTER\", \"FXS\", \"HOME\", \"OKB\", \"NEWT\", \"ENA\", \"FLOW\"]": 1.0,
-    "[\"DOGE\", \"TRX\", \"XRP\", \"SOL\"]": 0.01
-}'></textarea><br>
-        <label for="input2">Input 2 (JSON format):</label><br>
-        <textarea id="input2" name="input2" placeholder='{
-    "[\"BAT\", \"BRETT\", \"ORDER\", \"PENDLE\", \"WAL\"]": 1.0,
-    "[\"THETA\"]": 0.6
-}'></textarea><br>
+        <label for="input1">Input 1 (Python dict format):</label><br>
+        <textarea id="input1" name="input1" placeholder="{
+    ('PENGU', 'WLFI', 'ZRO', 'ASTER', 'FXS', 'HOME', 'OKB', 'NEWT', 'ENA', 'FLOW'): 1.0,
+    ('DOGE', 'TRX', 'XRP', 'SOL'): 0.01
+}"></textarea><br>
+        <label for="input2">Input 2 (Python dict format):</label><br>
+        <textarea id="input2" name="input2" placeholder="{
+    ('BAT', 'BRETT', 'ORDER', 'PENDLE', 'WAL'): 1.0,
+    ('THETA'): 0.6
+}"></textarea><br>
         <button type="submit">Submit</button>
     </form>
     {% if result %}
@@ -77,20 +77,28 @@ def index():
     error = None
     if request.method == 'POST':
         try:
-            # Parse input JSON
+            # Parse input as Python dictionaries using ast.literal_eval
             input1_str = request.form.get('input1')
             input2_str = request.form.get('input2')
-            input1 = {tuple(json.loads(k)): v for k, v in json.loads(input1_str).items()}
-            input2 = {tuple(json.loads(k)): v for k, v in json.loads(input2_str).items()}
+            input1 = ast.literal_eval(input1_str)
+            input2 = ast.literal_eval(input2_str)
+            
+            # Ensure keys are tuples
+            input1 = {tuple(k) if isinstance(k, list) else k: v for k, v in input1.items()}
+            input2 = {tuple(k) if isinstance(k, list) else k: v for k, v in input2.items()}
             
             # Merge inputs
             merged = merge_inputs(input1, input2)
             
-            # Format result as JSON string for display
-            result_json = {json.dumps(list(k)): v for k, v in merged.items()}
-            result = json.dumps(result_json, indent=4)
+            # Format result as Python dictionary string
+            result_lines = ["{"]
+            for tokens, value in merged.items():
+                result_lines.append(f"    {tokens}: {value},")
+            result_lines[-1] = result_lines[-1].rstrip(",")  # Remove trailing comma
+            result_lines.append("}")
+            result = "\n".join(result_lines)
         except Exception as e:
-            error = f"Error: {str(e)}. Please ensure inputs are valid JSON."
+            error = f"Error: {str(e)}. Please ensure inputs are valid Python dictionaries with tuple keys."
     
     return render_template_string(HTML_TEMPLATE, result=result, error=error)
 
